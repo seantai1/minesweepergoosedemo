@@ -52,7 +52,7 @@ function initializeBoard(numberOfMines) {
 function createBoard() {
     const boardElement = document.getElementById('minesweeper-board');
     boardElement.innerHTML = ''; // Clear any existing board
-    boardElement.style.gridTemplateColumns = `repeat(${gridSize}, 20px)`; // Update grid columns
+    boardElement.style.gridTemplateColumns = `repeat(${gridSize}, 24px)`; // Update grid columns
 
     for (let x = 0; x < gridSize; x++) {
         for (let y = 0; y < gridSize; y++) {
@@ -78,7 +78,15 @@ function createBoard() {
 function handleCellClick(x, y) {
     if (gameOver || gameWon) return;
 
-    if (document.getElementById(`cell-${x}-${y}`).classList.contains('flagged')) return; // Prevent clicking flagged cells
+    const cellElement = document.getElementById(`cell-${x}-${y}`);
+
+    if (cellElement.classList.contains('flagged')) return; // Prevent clicking flagged cells
+
+    if (cellElement.classList.contains('revealed')) {
+        // If the cell is already revealed, try revealing neighbors if flag count matches
+        revealNeighborsIfFlagCountMatches(x, y);
+        return;
+    }
 
     if (board[x][y] === 'mine') {
         revealAllMines();
@@ -178,6 +186,42 @@ function setDifficulty(newGridSize, newNumberOfMines) {
     numberOfMines = newNumberOfMines;
     createBoard();
     initializeBoard(numberOfMines);
+}
+
+function revealNeighborsIfFlagCountMatches(x, y) {
+    let flagCount = 0;
+    for (let i = -1; i <= 1; i++) {
+        for (let j = -1; j <= 1; j++) {
+            if (i === 0 && j === 0) continue;
+            const nx = x + i;
+            const ny = y + j;
+            if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+                const neighborCell = document.getElementById(`cell-${nx}-${ny}`);
+                if (neighborCell.classList.contains('flagged')) {
+                    flagCount++;
+                }
+            }
+        }
+    }
+
+    const cellValue = board[x][y];
+
+    if (flagCount === cellValue) {
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                if (i === 0 && j === 0) continue;
+                const nx = x + i;
+                const ny = y + j;
+                if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+                    if (!document.getElementById(`cell-${nx}-${ny}`).classList.contains('flagged'))
+                    {
+                        revealCell(nx, ny); // Call revealCell directly
+                    }
+                }
+            }
+        }
+        checkWinCondition(); // Check win condition after revealing neighbors
+    }
 }
 
 // Initialize the game when the page loads
